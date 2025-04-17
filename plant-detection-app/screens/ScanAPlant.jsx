@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Image } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 
-const ScanAPlant = () => {
+const ScanAPlant = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <ImageBackground
@@ -24,7 +24,7 @@ const ScanAPlant = () => {
 
                 {/* Bottom Navbar (fixed at bottom) */}
                 <View style={styles.bottomNav}>
-                    <TouchableOpacity style={styles.navButton}>
+                    <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('CameraScreen')}>
                         <Ionicons name="camera-outline" size={30} color="white" />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.navButton}>

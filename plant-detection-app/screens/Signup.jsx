@@ -1,7 +1,47 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 const Signup = ({ navigation }) => {
+    // Handle sign up
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const apiUrl = "http://192.168.39.53:8000/users/create_user"
+    const now = new Date().toISOString();  // Generates current ISO timestamp
+
+    const handleSignup = async () => {
+        // const apiUrl = apiUrl
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    password: password,
+                    created_at: now,
+                    updated_at: now
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Alert.alert('Signup Successful!', 'You can now log in.');
+                navigation.navigate('Login'); // Go back to login screen
+            } else {
+                Alert.alert('Signup Failed', data.message || 'Please try again.');
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Network Error', 'Please check your connection!');
+        }
+    };
+
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Create Account</Text>
@@ -11,20 +51,26 @@ const Signup = ({ navigation }) => {
                 placeholder="Full Name"
                 placeholderTextColor="#aaa"
                 style={styles.input}
+                onChangeText={setName}
+                value={name}
             />
             <TextInput
                 placeholder="Email"
                 placeholderTextColor="#aaa"
                 style={styles.input}
+                onChangeText={setEmail}
+                value={email}
             />
             <TextInput
                 placeholder="Password"
                 placeholderTextColor="#aaa"
                 style={styles.input}
                 secureTextEntry
+                onChangeText={setPassword}
+                value={password}
             />
 
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={handleSignup}>
                 <Text style={styles.buttonText}>SIGN UP</Text>
             </TouchableOpacity>
 

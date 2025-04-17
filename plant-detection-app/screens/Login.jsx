@@ -1,18 +1,56 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
-const Login = ({ navigation }) => {
 
+const Login = ({ navigation }) => {
+    const apiUrl = "http://192.168.39.53:8000/users/login"
+    const now = new Date().toISOString();  // Generates current ISO timestamp
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = () => {
-        if (email === 'admin' && password === 'admin') {
-            navigation.navigate('ScanAPlant');
-        } else {
-            Alert.alert('Login Failed', 'Invalid username or password');
+    // const handleLogin = () => {
+    //     if (email === 'admin' && password === 'admin') {
+    //         navigation.navigate('ScanAPlant');
+    //     } else {
+    //         Alert.alert('Login Failed', 'Invalid username or password');
+    //     }
+    // };
+
+    const handleLogin = async () => {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                })
+            });
+
+            const data = await response.json();
+            console.log(typeof data)
+            console.log(data)
+            if (response.ok) {
+                Alert.alert(
+                    "Login Successful"
+                    // `Token: ${data.access_token}`
+                );
+                navigation.navigate('ScanAPlant'); // Go back to login screen
+            } else {
+                console.log("else part")
+                console.log(data)
+                Alert.alert('Login Failed', data.detail || 'Please try again');
+            }
+        } catch (error) {
+            console.log("error part")
+            console.error(error);
+
+            Alert.alert('Network Error', 'Please check your connection!');
         }
+
     };
 
     return (
