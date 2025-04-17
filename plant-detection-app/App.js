@@ -6,7 +6,6 @@ import ScanAPlant from "./screens/ScanAPlant";
 import CameraScreen from "./screens/CameraScreen";
 
 const Stack = createNativeStackNavigator();
-
 export default function App() {
   return (
     <NavigationContainer>

@@ -7,9 +7,9 @@ const Signup = ({ navigation }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const apiUrl = "http://192.168.39.53:8000/users/create_user"
+    const api = process.env.EXPO_PUBLIC_API_URL; // Exporting the env from the .env
+    const apiUrl = `${api}/users/create_user`;
     const now = new Date().toISOString();  // Generates current ISO timestamp
-
     const handleSignup = async () => {
         // const apiUrl = apiUrl
         try {
@@ -55,7 +55,7 @@ const Signup = ({ navigation }) => {
                 value={name}
             />
             <TextInput
-                placeholder="Email"
+                placeholder="email"
                 placeholderTextColor="#aaa"
                 style={styles.input}
                 onChangeText={setEmail}

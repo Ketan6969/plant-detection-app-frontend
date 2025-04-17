@@ -3,7 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 
 
 const Login = ({ navigation }) => {
-    const apiUrl = "http://192.168.39.53:8000/users/login"
+    const api = process.env.EXPO_PUBLIC_API_URL;
+    const apiUrl = `${api}/users/login`;
     const now = new Date().toISOString();  // Generates current ISO timestamp
 
     const [email, setEmail] = useState('');
