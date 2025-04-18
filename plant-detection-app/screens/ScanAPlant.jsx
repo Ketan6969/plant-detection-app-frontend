@@ -56,7 +56,9 @@ const ScanAPlant = ({ navigation }) => {
                         <Ionicons name="star-outline" size={26} color="white" />
                         <Text style={styles.navButtonText}>Favorites</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.navButton}>
+                    <TouchableOpacity style={styles.navButton}
+                        onPress={() => navigation.navigate('ProfileScreen')}
+                    >
                         <FontAwesome name="user-o" size={24} color="white" />
                         <Text style={styles.navButtonText}>Profile</Text>
                     </TouchableOpacity>

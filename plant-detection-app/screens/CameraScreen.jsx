@@ -1,14 +1,28 @@
 import React, { useState, useRef } from 'react';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import {
+    CameraView,
+    useCameraPermissions
+} from 'expo-camera';
+import {
+    Button,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    Image,
+    ActivityIndicator,
+    Alert
+} from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function CameraScreen() {
+export default function CameraScreen({ navigation }) {
     const [facing, setFacing] = useState('back');
     const [flash, setFlash] = useState('off');
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
     const cameraRef = useRef(null);
 
     if (!permission) {
@@ -54,7 +68,7 @@ export default function CameraScreen() {
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            alert('Sorry, we need media library permissions to make this work!');
+            Alert.alert('Permission required', 'We need access to your photos to select an image');
             return;
         }
 
@@ -74,18 +88,101 @@ export default function CameraScreen() {
         setCapturedImage(null);
     };
 
+    const sendImageToAPI = async () => {
+        setIsUploading(true);
+        try {
+            // Get the stored JWT token
+            const token = await AsyncStorage.getItem('userToken');
+
+            if (!token) {
+                Alert.alert('Authentication required', 'Please login to use this feature');
+                navigation.navigate('Login');
+                return;
+            }
+
+            // Create FormData to send the image
+            const formData = new FormData();
+            formData.append('file', {
+                uri: capturedImage,
+                name: 'plant_photo.jpg',
+                type: 'image/jpeg'
+            });
+
+            // Add timestamp if needed
+            // formData.append('timestamp', new Date().toISOString());
+
+            const api = process.env.EXPO_PUBLIC_API_URL;
+            const response = await fetch(`${api}/plant`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    // 'Content-Type': 'multipart/form-data',
+                },
+                body: formData
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Failed to upload image');
+            }
+
+            // Handle successful response
+            Alert.alert('Success', 'Image uploaded successfully!');
+            navigation.navigate('ResultsScreen', { analysis: responseData });
+
+        } catch (error) {
+            console.error('Upload error:', error);
+
+            // Handle expired token
+            if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                Alert.alert(
+                    'Session Expired',
+                    'Please login again',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: async () => {
+                                await AsyncStorage.removeItem('userToken');
+                                navigation.navigate('Login');
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Error', error.message || 'Failed to upload image');
+            }
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     if (capturedImage) {
         return (
             <View style={styles.previewContainer}>
                 <Image source={{ uri: capturedImage }} style={styles.previewImage} />
                 <View style={styles.previewButtons}>
-                    <TouchableOpacity style={styles.previewButton} onPress={retakePicture}>
+                    <TouchableOpacity
+                        style={styles.previewButton}
+                        onPress={retakePicture}
+                        disabled={isUploading}
+                    >
                         <Ionicons name="camera-reverse" size={30} color="#fff" />
                         <Text style={styles.previewButtonText}>Retake</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.previewButton}>
-                        <Ionicons name="checkmark-circle" size={30} color="#fff" />
-                        <Text style={styles.previewButtonText}>Use Photo</Text>
+                    <TouchableOpacity
+                        style={styles.previewButton}
+                        onPress={sendImageToAPI}
+                        disabled={isUploading}
+                    >
+                        {isUploading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle" size={30} color="#fff" />
+                                <Text style={styles.previewButtonText}>Use Photo</Text>
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
             </View>
