@@ -6,6 +6,7 @@ import ScanAPlant from "./screens/ScanAPlant";
 import CameraScreen from "./screens/CameraScreen";
 import ResultsScreen from "./screens/ResultScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import FavoriteScreen from "./screens/FavoriteScreen";
 
 const Stack = createNativeStackNavigator();
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
         <Stack.Screen name="CameraScreen" component={CameraScreen} />
         <Stack.Screen name="ResultsScreen" component={ResultsScreen} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="FavoriteScreen" component={FavoriteScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
