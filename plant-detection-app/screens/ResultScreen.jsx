@@ -1,8 +1,73 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ResultsScreen({ route }) {
     const { analysis } = route.params;
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const api = process.env.EXPO_PUBLIC_API_URL;
+    const apiUrl = `${api}/plant/favorite/add`;
+
+    const toggleFavorite = async () => {
+        if (isLoading || isFavorite) return;
+
+        setIsLoading(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+
+            if (!token) {
+                Alert.alert(
+                    'Authentication Required',
+                    'Please sign in to add plants to favorites',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            // Prepare the exact PlantDetails structure expected by backend
+            const plantDetails = {
+                organ: analysis.organ || '',
+                species: analysis.species?.common_name || analysis.species || '',
+                common_names: analysis.common_names || [],
+                scientific_name: analysis.scientific_name || ''
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(plantDetails)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to add to favorites');
+            }
+
+            const data = await response.json();
+
+            setIsFavorite(true);
+            Alert.alert(
+                'Added to Favorites',
+                'This plant has been added to your favorites!',
+                [{ text: 'OK' }]
+            );
+        } catch (error) {
+            console.error('Error adding to favorites:', error);
+            Alert.alert(
+                'Error',
+                error.message || 'Failed to add to favorites. Please try again.',
+                [{ text: 'OK' }]
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     if (!analysis) {
         return (
@@ -17,19 +82,50 @@ export default function ResultsScreen({ route }) {
             <View style={styles.header}>
                 <Text style={styles.title}>Plant Identification</Text>
                 <Text style={styles.subtitle}>Detailed Analysis Results</Text>
+
+                <TouchableOpacity
+                    style={[styles.favoriteButton, isFavorite && styles.favoritedButton]}
+                    onPress={toggleFavorite}
+                    disabled={isLoading || isFavorite}
+                >
+                    <Ionicons
+                        name={isFavorite ? 'heart' : 'heart-outline'}
+                        size={24}
+                        color={isFavorite ? '#FF3B30' : '#4C956C'}
+                    />
+                    <Text style={[styles.favoriteText, { color: isFavorite ? '#FF3B30' : '#4C956C' }]}>
+                        {isFavorite ? 'Favorited' : 'Add to Favorites'}
+                    </Text>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.card}>
+                {analysis.image_url && (
+                    <View style={styles.imageContainer}>
+                        <Image
+                            source={{ uri: analysis.image_url }}
+                            style={styles.plantImage}
+                            resizeMode="cover"
+                        />
+                    </View>
+                )}
+
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Basic Information</Text>
                     <View style={styles.row}>
                         <Text style={styles.label}>Organ:</Text>
-                        <Text style={styles.value}>{analysis.organ}</Text>
+                        <Text style={styles.value}>{analysis.organ || 'N/A'}</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>Species:</Text>
-                        <Text style={styles.value}>{analysis.species}</Text>
+                        <Text style={styles.value}>{analysis.species?.common_name || analysis.species || 'N/A'}</Text>
                     </View>
+                    {analysis.family && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Family:</Text>
+                            <Text style={styles.value}>{analysis.family}</Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.divider} />
@@ -38,8 +134,14 @@ export default function ResultsScreen({ route }) {
                     <Text style={styles.sectionTitle}>Scientific Details</Text>
                     <View style={styles.row}>
                         <Text style={styles.label}>Scientific Name:</Text>
-                        <Text style={[styles.value, styles.scientificName]}>{analysis.scientific_name}</Text>
+                        <Text style={[styles.value, styles.scientificName]}>{analysis.scientific_name || 'N/A'}</Text>
                     </View>
+                    {analysis.genus && (
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Genus:</Text>
+                            <Text style={styles.value}>{analysis.genus}</Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.divider} />
@@ -58,6 +160,16 @@ export default function ResultsScreen({ route }) {
                         <Text style={styles.value}>No common names found.</Text>
                     )}
                 </View>
+
+                {analysis.description && (
+                    <>
+                        <View style={styles.divider} />
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Description</Text>
+                            <Text style={styles.descriptionText}>{analysis.description}</Text>
+                        </View>
+                    </>
+                )}
             </View>
         </ScrollView>
     );
@@ -68,6 +180,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         backgroundColor: '#F9FAF9',
         padding: 20,
+        paddingBottom: 40,
     },
     header: {
         marginBottom: 25,
@@ -82,6 +195,24 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#4C956C',
+        marginBottom: 15,
+    },
+    favoriteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F7F4',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 25,
+        marginTop: 10,
+    },
+    favoritedButton: {
+        backgroundColor: '#FFEBEE',
+    },
+    favoriteText: {
+        marginLeft: 8,
+        fontWeight: '600',
+        fontSize: 16,
     },
     card: {
         backgroundColor: '#FFFFFF',
@@ -89,16 +220,27 @@ const styles = StyleSheet.create({
         padding: 25,
         width: '100%',
         shadowColor: '#000',
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 12,
-        elevation: 3,
+        shadowRadius: 15,
+        elevation: 5,
+    },
+    imageContainer: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 20,
+    },
+    plantImage: {
+        width: '100%',
+        height: '100%',
     },
     section: {
-        marginBottom: 15,
+        marginBottom: 20,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '600',
         color: '#4C956C',
         marginBottom: 15,
@@ -125,7 +267,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#D6E1D6',
+        backgroundColor: '#E8F4EA',
         marginVertical: 20,
     },
     commonNamesContainer: {
@@ -144,6 +286,11 @@ const styles = StyleSheet.create({
     commonNameText: {
         color: '#2E2E2E',
         fontSize: 14,
+    },
+    descriptionText: {
+        fontSize: 15,
+        color: '#555',
+        lineHeight: 22,
     },
     errorText: {
         fontSize: 18,
