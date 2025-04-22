@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, ActivityIndi
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import BottomNavBar from '../components/BottomNavBar';
 
 const ProfileScreen = () => {
     const [favorites, setFavorites] = useState([]);
@@ -88,7 +89,7 @@ const ProfileScreen = () => {
             )}
 
             {/* Bottom Navigation Bar */}
-            <View style={styles.bottomNav}>
+            {/* <View style={styles.bottomNav}>
                 <TouchableOpacity
                     style={styles.navButton}
                     onPress={() => navigation.navigate('ScanAPlant')}
@@ -112,7 +113,8 @@ const ProfileScreen = () => {
                     <FontAwesome name="user-o" size={24} color="#4CAF50" />
                     <Text style={styles.navButtonText}>Profile</Text>
                 </TouchableOpacity>
-            </View>
+            </View> */}
+            <BottomNavBar navigation={navigation} activeRoute="ProfileScreen" />
         </View>
     );
 };

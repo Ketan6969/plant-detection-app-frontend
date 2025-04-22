@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Image } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import BottomNavBar from '../components/BottomNavBar';
 
 const ScanAPlant = ({ navigation }) => {
     return (
@@ -44,7 +45,7 @@ const ScanAPlant = ({ navigation }) => {
                 </View>
 
                 {/* Bottom Navigation */}
-                <View style={styles.bottomNav}>
+                {/* <View style={styles.bottomNav}>
                     <TouchableOpacity
                         style={[styles.navButton, styles.activeNavButton]}
                         onPress={() => navigation.navigate('CameraScreen')}
@@ -62,7 +63,10 @@ const ScanAPlant = ({ navigation }) => {
                         <FontAwesome name="user-o" size={24} color="white" />
                         <Text style={styles.navButtonText}>Profile</Text>
                     </TouchableOpacity>
-                </View>
+                </View> */}
+                <BottomNavBar navigation={navigation} activeRoute="ScanAPlant" />
+
+
             </ImageBackground>
         </View>
     );

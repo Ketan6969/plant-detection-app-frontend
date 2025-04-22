@@ -28,13 +28,7 @@ const Login = ({ navigation }) => {
     }, []);
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
-            return;
-        }
-
-        setIsLoading(true);
-        setError('');
+        // ... existing code ...
 
         try {
             const response = await fetch(apiUrl, {
@@ -54,13 +48,19 @@ const Login = ({ navigation }) => {
                 throw new Error(data.detail || 'Login failed. Please try again.');
             }
 
-            // Store token and user data if available
+            // Fix: Access the first element of the array which contains the token object
+            const tokenData = Array.isArray(data) ? data[0] : data;
+
+            if (!tokenData.access_token) {
+                throw new Error('No access token received');
+            }
+
+            // Store token
             await AsyncStorage.multiSet([
-                ['userToken', data.access_token],
-                ['userEmail', email] // Optional: store user email for display
+                ['userToken', tokenData.access_token],
             ]);
 
-            navigation.replace('ScanAPlant'); // Use replace to prevent going back to login
+            navigation.replace('ScanAPlant');
         } catch (error) {
             console.error('Login error:', error);
             setError(error.message);
@@ -69,7 +69,6 @@ const Login = ({ navigation }) => {
             setIsLoading(false);
         }
     };
-
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Welcome Back!</Text>
