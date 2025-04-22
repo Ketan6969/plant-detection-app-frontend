@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, Alert, Activ
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-// import BottomNavBar from '../components/BottomNavBar';
 import BottomNavBar from '../components/BottomNavBar';
 
 const FavoriteScreen = () => {
@@ -72,12 +71,13 @@ const FavoriteScreen = () => {
                     text: 'Remove', style: 'destructive',
                     onPress: async () => {
                         try {
-                            const token = await AsyncStorage.getItem('authToken');
+                            const token = await AsyncStorage.getItem('userToken');
                             const deleteUrl = `${api}/plant/favorite/remove/${id}`;
                             const response = await fetch(deleteUrl, {
                                 method: 'DELETE',
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
+                            console.log(token)
                             if (!response.ok) {
                                 throw new Error('Failed to remove favorite');
                             }
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 16,
         paddingBottom: 100, // Space for nav bar
+        top: 40
     },
     card: {
         backgroundColor: '#fff',

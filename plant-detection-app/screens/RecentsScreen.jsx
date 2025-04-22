@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, FlatList, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,8 +10,6 @@ const RecentsScreen = ({ navigation }) => {
     const [error, setError] = useState(null);
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/plant/get_recents`;
-
-    console.log(`Consoling the API URL ${apiUrl}`)
 
     useEffect(() => {
         fetchRecents();
@@ -53,10 +51,7 @@ const RecentsScreen = ({ navigation }) => {
     };
 
     const renderRecentItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.recentItem}
-            onPress={() => navigation.navigate('PlantDetail', { scanId: item._id })}
-        >
+        <View style={styles.recentItem}>
             <View style={styles.imagePlaceholder}>
                 <Ionicons name="leaf" size={30} color="#4CAF50" />
             </View>
@@ -78,8 +73,7 @@ const RecentsScreen = ({ navigation }) => {
                     </Text>
                 </View>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.6)" />
-        </TouchableOpacity>
+        </View>
     );
 
     const handleRefresh = () => {
@@ -104,12 +98,6 @@ const RecentsScreen = ({ navigation }) => {
                         <View style={styles.errorContainer}>
                             <Ionicons name="warning" size={40} color="#FF5252" />
                             <Text style={styles.errorText}>Failed to load recents</Text>
-                            <TouchableOpacity
-                                style={styles.retryButton}
-                                onPress={handleRefresh}
-                            >
-                                <Text style={styles.retryButtonText}>Try Again</Text>
-                            </TouchableOpacity>
                         </View>
                     ) : loading ? (
                         <View style={styles.loadingContainer}>
@@ -120,13 +108,6 @@ const RecentsScreen = ({ navigation }) => {
                         <View style={styles.emptyContainer}>
                             <Ionicons name="time-outline" size={40} color="rgba(255,255,255,0.6)" />
                             <Text style={styles.emptyText}>No scans recorded yet</Text>
-                            <TouchableOpacity
-                                style={styles.scanButton}
-                                onPress={() => navigation.navigate('CameraScreen')}
-                            >
-                                <Ionicons name="scan" size={24} color="white" />
-                                <Text style={styles.scanButtonText}>Scan Your First Plant</Text>
-                            </TouchableOpacity>
                         </View>
                     ) : (
                         <FlatList
@@ -239,26 +220,6 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.7)',
         fontSize: 18,
         marginTop: 15,
-        marginBottom: 30,
-    },
-    scanButton: {
-        flexDirection: 'row',
-        backgroundColor: '#4CAF50',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 30,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    scanButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-        marginLeft: 10,
     },
     errorContainer: {
         flex: 1,
@@ -269,17 +230,6 @@ const styles = StyleSheet.create({
         color: 'white',
         marginTop: 15,
         fontSize: 16,
-        marginBottom: 20,
-    },
-    retryButton: {
-        backgroundColor: '#FF5252',
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 25,
-    },
-    retryButtonText: {
-        color: 'white',
-        fontWeight: '600',
     },
 });
 

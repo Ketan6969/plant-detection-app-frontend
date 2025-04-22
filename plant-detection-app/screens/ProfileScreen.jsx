@@ -1,26 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { View, Text, Image, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import BottomNavBar from '../components/BottomNavBar';
+import { jwtDecode } from 'jwt-decode';
 
 const ProfileScreen = () => {
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [userData, setUserData] = useState({ name: '', email: '' });
     const navigation = useNavigation();
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/plant/favorite/get_all`;
+
+    const fetchUserData = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) {
+                navigation.navigate('Login');
+                return;
+            }
+
+            const decoded = jwtDecode(token);
+            setUserData({
+                name: decoded.name || 'User',
+                email: decoded.email || ''
+            });
+        } catch (error) {
+            console.error('Error decoding token:', error);
+        }
+    };
 
     const fetchFavorites = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
             if (!token) {
-                console.log("auth not found!");
                 navigation.navigate('Login');
                 return;
             }
+
             const response = await fetch(apiUrl, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -49,7 +69,31 @@ const ProfileScreen = () => {
         }
     };
 
+    const handleLogout = async () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Logout',
+                    onPress: async () => {
+                        await AsyncStorage.removeItem('userToken');
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Login' }],
+                        });
+                    }
+                }
+            ]
+        );
+    };
+
     useEffect(() => {
+        fetchUserData();
         fetchFavorites();
     }, []);
 
@@ -59,97 +103,293 @@ const ProfileScreen = () => {
             <View style={styles.favoriteContent}>
                 <Text style={styles.favoriteName}>{item.name}</Text>
                 <Text style={styles.favoriteScientific}>{item.scientific_name}</Text>
+                <View style={styles.dateContainer}>
+                    <Feather name="calendar" size={14} color="#95a5a6" />
+                    <Text style={styles.dateAdded}>{item.date_added}</Text>
+                </View>
             </View>
+            <TouchableOpacity style={styles.favoriteButton}>
+                <Ionicons name="heart" size={20} color="#e74c3c" />
+            </TouchableOpacity>
         </View>
     );
 
     return (
         <View style={styles.container}>
+            {/* Header with gradient background */}
             <View style={styles.header}>
-                <Image source={require('../assets/images/plant.jpg')} style={styles.profileImage} />
-                <Text style={styles.userName}>Your Name</Text>
-                <Text style={styles.userEmail}>your@email.com</Text>
+                <View style={styles.headerContent}>
+                    <View style={styles.profileImageContainer}>
+                        <Image
+                            source={require('../assets/images/plant.jpg')}
+                            style={styles.profileImage}
+                        />
+                        <View style={styles.profileImageOverlay} />
+                    </View>
+                    <View style={styles.userInfo}>
+                        <Text style={styles.userName}>{userData.name}</Text>
+                        <Text style={styles.userEmail}>{userData.email}</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.logoutButton}
+                        onPress={handleLogout}
+                    >
+                        <MaterialIcons name="logout" size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            <Text style={styles.sectionTitle}>Favorite Plants</Text>
+            {/* Stats Section */}
+            <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                    <Text style={styles.statValue}>42</Text>
+                    <Text style={styles.statLabel}>Scans</Text>
+                </View>
+                <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{favorites.length}</Text>
+                    <Text style={styles.statLabel}>Favorites</Text>
+                </View>
+                <View style={styles.statItem}>
+                    <Text style={styles.statValue}>15</Text>
+                    <Text style={styles.statLabel}>Identified</Text>
+                </View>
+            </View>
+
+            {/* Favorites Section */}
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Favorite Plants</Text>
+                <TouchableOpacity>
+                    <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+            </View>
 
             {loading ? (
-                <ActivityIndicator size="large" color="#27ae60" style={{ marginTop: 20 }} />
+                <ActivityIndicator size="large" color="#2ecc71" style={styles.loader} />
             ) : error ? (
-                <Text style={styles.errorText}>Error: {error}</Text>
+                <View style={styles.errorContainer}>
+                    <Ionicons name="warning" size={40} color="#e74c3c" />
+                    <Text style={styles.errorText}>Failed to load favorites</Text>
+                </View>
             ) : favorites.length === 0 ? (
-                <Text style={styles.emptyText}>No favorite plants yet.</Text>
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="leaf-outline" size={60} color="#bdc3c7" />
+                    <Text style={styles.emptyText}>No favorites yet</Text>
+                    <Text style={styles.emptySubtext}>Your favorite plants will appear here</Text>
+                    <TouchableOpacity style={styles.scanButton}>
+                        <Text style={styles.scanButtonText}>Scan Your First Plant</Text>
+                    </TouchableOpacity>
+                </View>
             ) : (
                 <FlatList
-                    data={favorites}
+                    data={favorites.slice(0, 5)}
                     renderItem={renderItem}
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.favoriteList}
+                    scrollEnabled={false}
                 />
             )}
 
-            {/* Bottom Navigation Bar */}
-            {/* <View style={styles.bottomNav}>
-                <TouchableOpacity
-                    style={styles.navButton}
-                    onPress={() => navigation.navigate('ScanAPlant')}
-                >
-                    <Ionicons name="camera" size={26} color="white" />
-                    <Text style={styles.navButtonText}>Scan</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.navButton}
-                    onPress={() => navigation.navigate('FavoriteScreen')}
-                >
-                    <Ionicons name="star-outline" size={26} color="white" />
-                    <Text style={styles.navButtonText}>Favorites</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.navButton, styles.activeNavButton]}
-                    onPress={() => navigation.navigate('ProfileScreen')}
-                >
-                    <FontAwesome name="user-o" size={24} color="#4CAF50" />
-                    <Text style={styles.navButtonText}>Profile</Text>
-                </TouchableOpacity>
-            </View> */}
             <BottomNavBar navigation={navigation} activeRoute="ProfileScreen" />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#ecf0f1' },
-    header: { alignItems: 'center', padding: 20 },
-    profileImage: { width: 100, height: 100, borderRadius: 50 },
-    userName: { fontSize: 22, fontWeight: 'bold', marginTop: 10, color: '#2c3e50' },
-    userEmail: { fontSize: 14, color: '#7f8c8d' },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 16, marginTop: 20, color: '#2c3e50' },
-    favoriteList: { padding: 16, paddingBottom: 100 },
-    favoriteCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, padding: 12, elevation: 2 },
-    favoriteImage: { width: 60, height: 60, borderRadius: 8 },
-    favoriteContent: { marginLeft: 16 },
-    favoriteName: { fontSize: 16, fontWeight: 'bold', color: '#2c3e50' },
-    favoriteScientific: { fontSize: 14, color: '#7f8c8d' },
-    emptyText: { textAlign: 'center', marginTop: 20, color: '#7f8c8d' },
-    errorText: { textAlign: 'center', marginTop: 20, color: '#e74c3c' },
-    bottomNav: {
+    container: {
+        flex: 1,
+        backgroundColor: '#f8f9fa',
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 30,
+        backgroundColor: '#2ecc71',
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    headerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    profileImageContainer: {
+        position: 'relative',
+    },
+    profileImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        borderWidth: 3,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    profileImageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 40,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+    },
+    userInfo: {
+        flex: 1,
+        marginLeft: 15,
+    },
+    userName: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: 'white',
+    },
+    userEmail: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 2,
+    },
+    logoutButton: {
+        padding: 10,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    statsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        backgroundColor: 'rgba(30, 30, 30, 0.9)',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingVertical: 15,
-        paddingHorizontal: 10,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        marginTop: -20,
+        marginHorizontal: 20,
+        padding: 20,
+        backgroundColor: 'white',
+        borderRadius: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+        zIndex: 1,
     },
-    navButton: { alignItems: 'center', padding: 8, borderRadius: 20, width: '30%' },
-    activeNavButton: { backgroundColor: 'rgba(76, 175, 80, 0.2)' },
-    navButtonText: { color: 'white', fontSize: 12, marginTop: 5 },
+    statItem: {
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#2c3e50',
+    },
+    statLabel: {
+        fontSize: 14,
+        color: '#7f8c8d',
+        marginTop: 5,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginTop: 30,
+        marginBottom: 15,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#2c3e50',
+    },
+    seeAllText: {
+        fontSize: 14,
+        color: '#2ecc71',
+        fontWeight: '600',
+    },
+    favoriteList: {
+        paddingHorizontal: 20,
+        paddingBottom: 100,
+    },
+    favoriteCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        marginBottom: 15,
+        padding: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    favoriteImage: {
+        width: 60,
+        height: 60,
+        borderRadius: 10,
+    },
+    favoriteContent: {
+        flex: 1,
+        marginLeft: 15,
+    },
+    favoriteName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2c3e50',
+    },
+    favoriteScientific: {
+        fontSize: 13,
+        color: '#7f8c8d',
+        marginTop: 2,
+    },
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    dateAdded: {
+        fontSize: 12,
+        color: '#95a5a6',
+        marginLeft: 5,
+    },
+    favoriteButton: {
+        padding: 8,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingBottom: 100,
+    },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#2c3e50',
+        marginTop: 15,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        color: '#95a5a6',
+        marginTop: 5,
+        textAlign: 'center',
+        marginHorizontal: 40,
+    },
+    scanButton: {
+        marginTop: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        backgroundColor: '#2ecc71',
+        borderRadius: 25,
+    },
+    scanButtonText: {
+        color: 'white',
+        fontWeight: '600',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 100,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#e74c3c',
+        marginTop: 15,
+    },
+    loader: {
+        marginTop: 40,
+    },
 });
 
 export default ProfileScreen;

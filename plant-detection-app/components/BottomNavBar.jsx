@@ -10,7 +10,7 @@ const BottomNavBar = ({ navigation, activeRoute }) => {
                     styles.navButton,
                     activeRoute === 'CameraScreen' && styles.activeNavButton
                 ]}
-                onPress={() => navigation.navigate('CameraScreen')}
+                onPress={() => navigation.navigate('ScanAPlant')}
             >
                 <Ionicons name="camera" size={26} color="#4CAF50" />
                 <Text style={styles.navButtonText}>Scan</Text>
