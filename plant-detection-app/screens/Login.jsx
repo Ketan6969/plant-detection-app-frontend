@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { validateEmail, validatePassword } from '../utils/validator';
 
 const Login = ({ navigation }) => {
     const api = process.env.EXPO_PUBLIC_API_URL;
@@ -39,18 +40,17 @@ const Login = ({ navigation }) => {
             general: ''
         };
 
-        // Email validation
-        if (!email.trim()) {
-            newErrors.email = 'Email is required';
-            valid = false;
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            newErrors.email = 'Please enter a valid email';
+        // Use imported validators
+        const emailError = validateEmail(email.trim());
+        const passwordError = validatePassword(password);
+
+        if (emailError) {
+            newErrors.email = emailError;
             valid = false;
         }
 
-        // Password validation
-        if (!password) {
-            newErrors.password = 'Password is required';
+        if (passwordError) {
+            newErrors.password = passwordError;
             valid = false;
         }
 
