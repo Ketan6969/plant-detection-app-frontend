@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -114,18 +114,29 @@ const ProfileScreen = () => {
         </View>
     );
 
+    const renderProfileImage = () => {
+        if (userData.name) {
+            const firstLetter = userData.name.charAt(0).toUpperCase();
+            return (
+                <View style={styles.profileImageContainer}>
+                    <Text style={styles.profileImageText}>{firstLetter}</Text>
+                </View>
+            );
+        }
+        return (
+            <Image
+                source={require('../assets/images/plant5.jpg')} // Placeholder default image
+                style={styles.profileImage}
+            />
+        );
+    };
+
     return (
         <View style={styles.container}>
             {/* Header with gradient background */}
             <View style={styles.header}>
                 <View style={styles.headerContent}>
-                    <View style={styles.profileImageContainer}>
-                        <Image
-                            source={require('../assets/images/plant.jpg')}
-                            style={styles.profileImage}
-                        />
-                        <View style={styles.profileImageOverlay} />
-                    </View>
+                    {renderProfileImage()}
                     <View style={styles.userInfo}>
                         <Text style={styles.userName}>{userData.name}</Text>
                         <Text style={styles.userEmail}>{userData.email}</Text>
@@ -217,19 +228,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     profileImageContainer: {
-        position: 'relative',
-    },
-    profileImage: {
         width: 80,
         height: 80,
+        backgroundColor: '#7f8c8d',
         borderRadius: 40,
-        borderWidth: 3,
-        borderColor: 'rgba(255,255,255,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    profileImageOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        borderRadius: 40,
-        backgroundColor: 'rgba(0,0,0,0.1)',
+    profileImageText: {
+        fontSize: 30,
+        fontWeight: 'bold',
+        color: 'white',
     },
     userInfo: {
         flex: 1,
