@@ -50,10 +50,10 @@ const BottomNavBar = ({ navigation, activeRoute }) => {
                 <Text style={styles.navButtonText}>Profile</Text>
             </TouchableOpacity>
 
-            {/* 
-            <Button
+
+            {/* <Button
                 title="Test Notification"
-                onPress={scheduleDailyPlantNotifications}
+                onPress={sendPlantCareNotification}
             /> */}
         </View>
     );

@@ -109,6 +109,8 @@ const FavoriteScreen = () => {
 
     return (
         <View style={styles.container}>
+            <Text style={styles.title}>Favorite Screens</Text>
+            <Text style={styles.subtitle}>Your Favorites</Text>
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#2ecc71" />
@@ -180,6 +182,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#ecf0f1',
+    },
+    title: {
+
+        fontSize: 32,
+        color: '#333',
+        fontWeight: '800',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 18,
+        color: 'rgba(0,0,0,0.7)',
+        marginBottom: 30,
+        textAlign: 'center',
     },
     loadingContainer: {
         flex: 1,

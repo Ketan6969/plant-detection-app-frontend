@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const RecentItem = ({ item }) => {
     const [imageError, setImageError] = useState(false);
-
+    console.log(item.identified_plant)
     const handleImageError = () => {
         setImageError(true);
     };
@@ -23,6 +23,7 @@ const RecentItem = ({ item }) => {
             </View>
             <View style={styles.recentInfo}>
                 <Text style={styles.recentName}>{item.identified_plant}</Text>
+
                 <View style={styles.metaContainer}>
                     <Text style={styles.recentDate}>
                         {new Date(item.timestamp).toLocaleDateString('en-US', {
