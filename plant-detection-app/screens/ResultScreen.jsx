@@ -1,22 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sharing from 'expo-sharing';
+import ViewShot from 'react-native-view-shot';
+import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
 
 export default function ResultsScreen({ route, navigation }) {
-    const { analysis } = route.params;
-    const { savedImagePath } = route.params;
-    console.log('savedImagePath:', savedImagePath);
+    const { analysis = {}, savedImagePath } = route.params || {};
     const [isFavorite, setIsFavorite] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
+    const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+    const viewShotRef = useRef();
+
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/plant/favorite/add`;
 
     const toggleFavorite = async () => {
-        if (isLoading || isFavorite) return;
+        if (isFavoriteLoading || isFavorite) return;
 
-        setIsLoading(true);
+        setIsFavoriteLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
 
@@ -24,18 +28,17 @@ export default function ResultsScreen({ route, navigation }) {
                 Alert.alert(
                     'Authentication Required',
                     'Please sign in to add plants to favorites',
-                    [{ text: 'OK' }]
+                    [{ text: 'OK', onPress: () => navigation.navigate('Profile') }]
                 );
                 return;
             }
 
-            // Include the image URL in the plant details
             const plantDetails = {
                 organ: analysis.organ || '',
                 species: typeof analysis.species === 'object' ? analysis.species.common_name : analysis.species || '',
                 common_names: analysis.common_names || [],
                 scientific_name: analysis.scientific_name || '',
-                image_url: savedImagePath || '',  // Send the image URL
+                image_url: savedImagePath || '',
             };
 
             const response = await fetch(apiUrl, {
@@ -66,271 +69,374 @@ export default function ResultsScreen({ route, navigation }) {
                 [{ text: 'OK' }]
             );
         } finally {
-            setIsLoading(false);
+            setIsFavoriteLoading(false);
         }
     };
 
+    const handleShare = async () => {
+        try {
+            setIsSharing(true);
 
-    if (!analysis) {
+            if (!savedImagePath && !analysis) {
+                Alert.alert('Nothing to share', 'No plant information available');
+                return;
+            }
+
+            const uri = await captureRef(viewShotRef, {
+                format: 'jpg',
+                quality: 0.9,
+            });
+
+            if (!(await Sharing.isAvailableAsync())) {
+                Alert.alert('Sharing not available', 'Sharing is not supported on your device');
+                return;
+            }
+
+            await Sharing.shareAsync(uri, {
+                dialogTitle: 'Plant Identification Results',
+                mimeType: 'image/jpeg',
+                UTI: 'public.image',
+            });
+
+        } catch (error) {
+            console.error('Sharing failed:', error);
+            Alert.alert('Error', 'Failed to share plant details. Please try again.');
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    const captureRef = (ref, options) => {
+        return new Promise((resolve, reject) => {
+            ref.current.capture().then(uri => {
+                resolve(uri);
+            }).catch(error => {
+                reject(error);
+            });
+        });
+    };
+
+    const renderImageContent = () => {
+        if (savedImagePath) {
+            return (
+                <Image
+                    source={{ uri: savedImagePath }}
+                    style={styles.shareImage}
+                    resizeMode="cover"
+                />
+            );
+        }
         return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>No data available.</Text>
+            <View style={styles.noImageContainer}>
+                <Ionicons name="leaf-outline" size={80} color="#4C956C" />
+                <Text style={styles.noImageText}>Plant Image</Text>
             </View>
         );
-    }
+    };
 
     return (
-        <View style={styles.mainContainer}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Plant Identification</Text>
-                    <Text style={styles.subtitle}>Detailed Analysis Results</Text>
+        <View style={styles.container}>
+            {/* Hidden view for sharing */}
+            <ViewShot
+                ref={viewShotRef}
+                style={styles.hiddenView}
+                options={{ format: 'jpg', quality: 0.9 }}
+            >
+                {renderImageContent()}
 
+                <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.7)']}
+                    style={styles.gradientBanner}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                >
+                    <View style={styles.bannerContent}>
+                        <Text style={styles.shareTitle}>
+                            {analysis?.common_names?.[0] || 'Unknown Plant'}
+                        </Text>
+                        {analysis?.scientific_name && (
+                            <Text style={styles.shareScientificName}>
+                                {analysis.scientific_name}
+                            </Text>
+                        )}
+                        <View style={styles.appBrandContainer}>
+                            <Ionicons name="leaf" size={16} color="#4C956C" />
+                            <Text style={styles.shareAppName}>PlantApp Discovery</Text>
+                        </View>
+                    </View>
+                </LinearGradient>
+            </ViewShot>
+
+            {/* Visible content */}
+            <ScrollView contentContainerStyle={styles.contentContainer}>
+                <View style={styles.header}>
+                    <Text style={styles.screenTitle}>Plant Identification</Text>
+                    <Text style={styles.screenSubtitle}>Detailed Analysis Results</Text>
+                </View>
+
+                {/* Action buttons */}
+                <View style={styles.buttonRow}>
                     <TouchableOpacity
-                        style={[styles.favoriteButton, isFavorite && styles.favoritedButton]}
+                        style={[
+                            styles.actionButton,
+                            isFavorite ? styles.favoritedButton : styles.favoriteButton,
+                            (isFavoriteLoading || isFavorite) && styles.buttonDisabled
+                        ]}
                         onPress={toggleFavorite}
-                        disabled={isLoading || isFavorite}
+                        disabled={isFavoriteLoading || isFavorite}
                     >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#4C956C" />
+                        {isFavoriteLoading ? (
+                            <ActivityIndicator size="small" color="white" />
                         ) : (
                             <>
                                 <Ionicons
                                     name={isFavorite ? 'heart' : 'heart-outline'}
-                                    size={24}
-                                    color={isFavorite ? '#FF3B30' : '#4C956C'}
+                                    size={20}
+                                    color="white"
                                 />
-                                <Text style={[styles.favoriteText, { color: isFavorite ? '#FF3B30' : '#4C956C' }]}>
-                                    {isFavorite ? 'Favorited' : 'Add to Favorites'}
+                                <Text style={styles.buttonText}>
+                                    {isFavorite ? 'Favorited' : 'Favorite'}
                                 </Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.actionButton,
+                            styles.shareButton,
+                            isSharing && styles.buttonDisabled
+                        ]}
+                        onPress={handleShare}
+                        disabled={isSharing}
+                    >
+                        {isSharing ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <>
+                                <Ionicons name="share-social-outline" size={20} color="white" />
+                                <Text style={styles.buttonText}>Share</Text>
                             </>
                         )}
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.card}>
+                {/* Image preview */}
+                <View style={styles.imageContainer}>
                     {savedImagePath ? (
-                        <View style={styles.imageContainer}>
-                            <Image
-                                source={{ uri: savedImagePath }}
-                                style={styles.plantImage}
-                                resizeMode="cover"
-                                onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
-                            />
-                        </View>
+                        <Image
+                            source={{ uri: savedImagePath }}
+                            style={styles.previewImage}
+                            resizeMode="cover"
+                        />
                     ) : (
-                        <View style={[styles.imageContainer, styles.imagePlaceholder]}>
+                        <View style={styles.previewPlaceholder}>
                             <Ionicons name="leaf-outline" size={60} color="#4C956C" />
                         </View>
                     )}
+                </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Basic Information</Text>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Organ:</Text>
-                            <Text style={styles.value}>{analysis.organ || 'N/A'}</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Species:</Text>
-                            <Text style={styles.value}>
-                                {typeof analysis.species === 'object'
-                                    ? analysis.species.common_name
-                                    : analysis.species || 'N/A'}
-                            </Text>
-                        </View>
-                        {analysis.family && (
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Family:</Text>
-                                <Text style={styles.value}>{analysis.family}</Text>
-                            </View>
-                        )}
-                    </View>
+                {/* Plant details */}
+                <View style={styles.detailsSection}>
+                    <Text style={styles.sectionTitle}>Plant Details</Text>
 
-                    <View style={styles.divider} />
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Scientific Details</Text>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Scientific Name:</Text>
-                            <Text style={[styles.value, styles.scientificName]}>{analysis.scientific_name || 'N/A'}</Text>
-                        </View>
-                        {analysis.genus && (
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Genus:</Text>
-                                <Text style={styles.value}>{analysis.genus}</Text>
-                            </View>
-                        )}
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Common Names</Text>
-                        {analysis.common_names && analysis.common_names.length > 0 ? (
-                            <View style={styles.commonNamesContainer}>
-                                {analysis.common_names.map((name, index) => (
-                                    <View key={index} style={styles.commonNameTag}>
-                                        <Text style={styles.commonNameText}>{name}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        ) : (
-                            <Text style={styles.value}>No common names found.</Text>
-                        )}
-                    </View>
-
-                    {analysis.description && (
-                        <>
-                            <View style={styles.divider} />
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Description</Text>
-                                <Text style={styles.descriptionText}>{analysis.description}</Text>
-                            </View>
-                        </>
-                    )}
+                    <DetailRow label="Common Name" value={analysis?.common_names?.[0] || 'N/A'} />
+                    <DetailRow label="Scientific Name" value={analysis?.scientific_name || 'N/A'} />
+                    <DetailRow label="Organ" value={analysis?.organ || 'N/A'} />
+                    <DetailRow label="Family" value={analysis?.family || 'N/A'} />
+                    <DetailRow label="Genus" value={analysis?.genus || 'N/A'} />
+                    <DetailRow
+                        label="Species"
+                        value={typeof analysis?.species === 'object'
+                            ? analysis.species.common_name
+                            : analysis?.species || 'N/A'}
+                    />
                 </View>
             </ScrollView>
+
             <BottomNavBar navigation={navigation} activeRoute="ResultsScreen" />
         </View>
     );
 }
 
+const DetailRow = ({ label, value }) => (
+    <View style={styles.detailRow}>
+        <Text style={styles.detailLabel}>{label}:</Text>
+        <Text style={styles.detailValue}>{value}</Text>
+    </View>
+);
+
 const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        backgroundColor: '#F9FAF9',
-    },
     container: {
-        flexGrow: 1,
+        flex: 1,
+        backgroundColor: '#F8F8F8',
+    },
+    contentContainer: {
         padding: 20,
-        paddingBottom: 80, // Added padding to prevent content from being hidden behind nav bar
+        paddingBottom: 80,
     },
+
+    // Header
     header: {
-        marginBottom: 25,
-        alignItems: 'center',
-        top: 20
+        marginBottom: 20,
     },
-    title: {
+    screenTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#2E2E2E',
-        marginBottom: 5,
+        color: '#2C3E50',
     },
-    subtitle: {
+    screenSubtitle: {
         fontSize: 16,
-        color: '#4C956C',
-        marginBottom: 15,
+        color: '#7F8C8D',
+        marginTop: 4,
     },
-    favoriteButton: {
+
+    // Button row
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        gap: 12,
+    },
+    actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F0F7F4',
-        paddingHorizontal: 20,
+        justifyContent: 'center',
         paddingVertical: 12,
-        borderRadius: 25,
-        marginTop: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 3,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        flex: 1,
+    },
+    favoriteButton: {
+        backgroundColor: '#4C956C',
     },
     favoritedButton: {
-        backgroundColor: '#FFEBEE',
+        backgroundColor: '#FF3B30',
     },
-    favoriteText: {
-        marginLeft: 10,
-        fontWeight: '600',
+    shareButton: {
+        backgroundColor: '#2C3E50',
+    },
+    buttonDisabled: {
+        opacity: 0.7,
+    },
+    buttonText: {
+        color: 'white',
         fontSize: 16,
+        fontWeight: '500',
+        marginLeft: 8,
     },
-    card: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 15,
-        padding: 25,
-        width: '100%',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 15,
-        elevation: 5,
-        marginBottom: 20,
-        bottom: -10
-    },
+
+    // Image containers
     imageContainer: {
-        width: '100%',
-        height: 220,
+        marginBottom: 24,
         borderRadius: 12,
         overflow: 'hidden',
-        marginBottom: 20,
+        backgroundColor: '#EAFAF1',
     },
-    imagePlaceholder: {
-        backgroundColor: '#E8F4EA',
+    previewImage: {
+        width: '100%',
+        height: 250,
+    },
+    previewPlaceholder: {
+        width: '100%',
+        height: 250,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    plantImage: {
-        width: '100%',
-        height: '100%',
-    },
-    section: {
-        marginBottom: 20,
+
+    // Details section
+    detailsSection: {
+        marginBottom: 24,
     },
     sectionTitle: {
         fontSize: 20,
         fontWeight: '600',
         color: '#4C956C',
-        marginBottom: 15,
+        marginBottom: 16,
     },
-    row: {
+    detailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 12,
     },
-    label: {
+    detailLabel: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#2E2E2E',
-        flex: 1,
+        color: '#2C3E50',
     },
-    value: {
+    detailValue: {
         fontSize: 16,
-        color: '#555',
-        flex: 1,
+        color: '#566573',
+        maxWidth: '60%',
         textAlign: 'right',
     },
-    scientificName: {
+
+    // Share view styling (hidden)
+    hiddenView: {
+        position: 'absolute',
+        width: '100%',
+        left: -1000,
+    },
+    shareImage: {
+        width: '100%',
+        height: 400,
+    },
+    noImageContainer: {
+        width: '100%',
+        height: 400,
+        backgroundColor: '#EAFAF1',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noImageText: {
+        marginTop: 16,
+        fontSize: 20,
+        color: '#4C956C',
+        fontWeight: '500',
+    },
+    gradientBanner: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+    },
+    bannerContent: {
+        width: '100%',
+    },
+    shareTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 4,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    shareScientificName: {
+        fontSize: 20,
+        color: 'white',
         fontStyle: 'italic',
+        marginBottom: 12,
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
     },
-    divider: {
-        height: 1,
-        backgroundColor: '#E8F4EA',
-        marginVertical: 20,
-    },
-    commonNamesContainer: {
+    appBrandContainer: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginTop: 10,
-    },
-    commonNameTag: {
-        backgroundColor: '#B7E4C7',
-        borderRadius: 15,
-        paddingHorizontal: 12,
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.9)',
         paddingVertical: 6,
-        marginRight: 8,
-        marginBottom: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        alignSelf: 'flex-start',
+        marginTop: 8,
     },
-    commonNameText: {
-        color: '#2E2E2E',
+    shareAppName: {
         fontSize: 14,
-    },
-    descriptionText: {
-        fontSize: 15,
-        color: '#555',
-        lineHeight: 22,
-    },
-    errorText: {
-        fontSize: 18,
-        color: 'red',
-        textAlign: 'center',
+        color: '#4C956C',
+        fontWeight: '600',
+        marginLeft: 6,
     },
 });
