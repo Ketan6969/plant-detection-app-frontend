@@ -1,12 +1,13 @@
-import { ImportIcon } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-// import { validateName, validateEmail, validatePassword } from '../utils/validators';
 import { validateEmail, validateName, validatePassword } from '../utils/validator';
+
 const Signup = ({ navigation }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({
         name: '',
@@ -23,21 +24,18 @@ const Signup = ({ navigation }) => {
         let valid = true;
         const newErrors = { name: '', email: '', password: '', general: '' };
 
-        // Name validation
         const nameError = validateName(name);
         if (nameError) {
             newErrors.name = nameError;
             valid = false;
         }
 
-        // Email validation
         const emailError = validateEmail(email.trim());
         if (emailError) {
             newErrors.email = emailError;
             valid = false;
         }
 
-        // Password validation
         const passwordError = validatePassword(password);
         if (passwordError) {
             newErrors.password = passwordError;
@@ -68,7 +66,7 @@ const Signup = ({ navigation }) => {
                 return;
             }
 
-            navigation.navigate('Login'); // Navigate to Login on success
+            navigation.navigate('Login');
         } catch (error) {
             console.error(error);
             setErrors(prev => ({ ...prev, general: 'Network error. Please check your connection.' }));
@@ -110,17 +108,30 @@ const Signup = ({ navigation }) => {
             />
             {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-            <TextInput
-                placeholder="Password"
-                placeholderTextColor="#aaa"
-                style={[styles.input, errors.password && styles.errorInput]}
-                secureTextEntry
-                onChangeText={(text) => {
-                    setPassword(text);
-                    setErrors(prev => ({ ...prev, password: '' }));
-                }}
-                value={password}
-            />
+            {/* Password input with Eye toggle */}
+            <View style={{ width: '100%', position: 'relative' }}>
+                <TextInput
+                    placeholder="Password"
+                    placeholderTextColor="#aaa"
+                    style={[styles.input, errors.password && styles.errorInput]}
+                    secureTextEntry={!showPassword}
+                    onChangeText={(text) => {
+                        setPassword(text);
+                        setErrors(prev => ({ ...prev, password: '' }));
+                    }}
+                    value={password}
+                />
+                <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(prev => !prev)}
+                >
+                    {showPassword ? (
+                        <EyeOff color="#666" size={20} />
+                    ) : (
+                        <Eye color="#666" size={20} />
+                    )}
+                </TouchableOpacity>
+            </View>
             {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
             <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={isLoading}>
@@ -161,6 +172,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         borderWidth: 1,
         borderColor: '#ddd',
+        paddingRight: 45, // Add some space for eye icon
     },
     errorInput: {
         borderColor: '#e74c3c',
@@ -188,6 +200,11 @@ const styles = StyleSheet.create({
     switchText: {
         color: '#4CAF50',
         marginTop: 10,
+    },
+    eyeButton: {
+        position: 'absolute',
+        right: 15,
+        top: 18,
     },
 });
 

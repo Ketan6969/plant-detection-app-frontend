@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const RecentsScreen = ({ navigation }) => {
     const [recents, setRecents] = useState([]);
@@ -83,63 +84,52 @@ const RecentsScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={styles.container}>
-            <ImageBackground
-                source={require('../assets/images/plant.jpg')}
-                style={styles.background}
-                blurRadius={5}
-            >
-                <View style={styles.overlay} />
-                <View style={styles.contentContainer}>
-                    <Text style={styles.title}>Recent Scans</Text>
-                    <Text style={styles.subtitle}>Your plant identification history</Text>
+        <LinearGradient
+            colors={['#fafafa', '#f0f0f0', '#fafafa']} // Soft cool gray gradient
+            style={styles.container}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+        >
+            <View style={styles.contentContainer}>
+                <Text style={styles.title}>Recent Scans</Text>
+                <Text style={styles.subtitle}>Your plant identification history</Text>
 
-                    {error ? (
-                        <View style={styles.errorContainer}>
-                            <Ionicons name="warning" size={40} color="#FF5252" />
-                            <Text style={styles.errorText}>Failed to load recents</Text>
-                        </View>
-                    ) : loading ? (
-                        <View style={styles.loadingContainer}>
-                            <Ionicons name="leaf" size={40} color="#4CAF50" />
-                            <Text style={styles.loadingText}>Loading your scans...</Text>
-                        </View>
-                    ) : recents.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="time-outline" size={40} color="rgba(255,255,255,0.6)" />
-                            <Text style={styles.emptyText}>No scans recorded yet</Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={recents}
-                            renderItem={renderRecentItem}
-                            keyExtractor={item => item._id}
-                            contentContainerStyle={styles.listContainer}
-                            showsVerticalScrollIndicator={false}
-                            refreshing={loading}
-                            onRefresh={handleRefresh}
-                        />
-                    )}
-                </View>
+                {error ? (
+                    <View style={styles.errorContainer}>
+                        <Ionicons name="warning" size={40} color="#FF5252" />
+                        <Text style={styles.errorText}>Failed to load recents</Text>
+                    </View>
+                ) : loading ? (
+                    <View style={styles.loadingContainer}>
+                        <Ionicons name="leaf" size={40} color="#FFFFFF" />
+                        <Text style={styles.loadingText}>Loading your scans...</Text>
+                    </View>
+                ) : recents.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="time-outline" size={40} color="rgba(255,255,255,0.6)" />
+                        <Text style={styles.emptyText}>No scans recorded yet</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={recents}
+                        renderItem={renderRecentItem}
+                        keyExtractor={item => item._id}
+                        contentContainerStyle={styles.listContainer}
+                        showsVerticalScrollIndicator={false}
+                        refreshing={loading}
+                        onRefresh={handleRefresh}
+                    />
+                )}
+            </View>
 
-                <BottomNavBar navigation={navigation} activeRoute="RecentsScreen" />
-            </ImageBackground>
-        </View>
+            <BottomNavBar navigation={navigation} activeRoute="RecentsScreen" />
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
-    },
-    background: {
-        flex: 1,
-        justifyContent: 'space-between',
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)',
     },
     contentContainer: {
         flex: 1,
@@ -155,7 +145,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 16,
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(255,255,255,0.9)',
         marginBottom: 30,
         textAlign: 'center',
     },
@@ -165,7 +155,7 @@ const styles = StyleSheet.create({
     recentItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(203, 223, 194, 0.15)',
         borderRadius: 15,
         padding: 15,
         marginBottom: 15,
@@ -174,7 +164,7 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 10,
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
@@ -192,12 +182,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     recentDate: {
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 14,
         marginRight: 10,
     },
     recentTime: {
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 14,
     },
     loadingContainer: {
@@ -217,7 +207,7 @@ const styles = StyleSheet.create({
         paddingBottom: 100,
     },
     emptyText: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 18,
         marginTop: 15,
     },

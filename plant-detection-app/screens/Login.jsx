@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Eye, EyeOff } from 'lucide-react-native'; // added import
 import { validateEmail, validatePassword } from '../utils/validator';
 
 const Login = ({ navigation }) => {
@@ -9,6 +10,7 @@ const Login = ({ navigation }) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false); // added toggle state
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({
         email: '',
@@ -16,7 +18,6 @@ const Login = ({ navigation }) => {
         general: ''
     });
 
-    // Check if user is already logged in
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
@@ -40,7 +41,6 @@ const Login = ({ navigation }) => {
             general: ''
         };
 
-        // Use imported validators
         const emailError = validateEmail(email.trim());
         const passwordError = validatePassword(password);
 
@@ -69,9 +69,7 @@ const Login = ({ navigation }) => {
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: email.trim().toLowerCase(),
                     password: password,
@@ -90,7 +88,6 @@ const Login = ({ navigation }) => {
                 throw new Error('No access token received');
             }
 
-            // Store token
             await AsyncStorage.multiSet([
                 ['userToken', tokenData.access_token],
             ]);
@@ -126,17 +123,30 @@ const Login = ({ navigation }) => {
             />
             {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-            <TextInput
-                placeholder="Password"
-                placeholderTextColor={styles.placeholder.color}
-                style={[styles.input, errors.password && styles.errorInput]}
-                secureTextEntry
-                value={password}
-                onChangeText={(text) => {
-                    setPassword(text);
-                    setErrors(prev => ({ ...prev, password: '' }));
-                }}
-            />
+            {/* Password input with Eye toggle */}
+            <View style={{ width: '100%', position: 'relative' }}>
+                <TextInput
+                    placeholder="Password"
+                    placeholderTextColor={styles.placeholder.color}
+                    style={[styles.input, errors.password && styles.errorInput]}
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={(text) => {
+                        setPassword(text);
+                        setErrors(prev => ({ ...prev, password: '' }));
+                    }}
+                />
+                <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(prev => !prev)}
+                >
+                    {showPassword ? (
+                        <EyeOff color="#666" size={22} />
+                    ) : (
+                        <Eye color="#666" size={22} />
+                    )}
+                </TouchableOpacity>
+            </View>
             {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
             <TouchableOpacity
@@ -188,6 +198,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         borderWidth: 1,
         borderColor: '#D6E1D6',
+        paddingRight: 45, // extra space for the eye icon
     },
     errorInput: {
         borderColor: '#e74c3c',
@@ -218,6 +229,11 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: 15,
         marginTop: -5,
+    },
+    eyeButton: {
+        position: 'absolute',
+        right: 15,
+        top: 18,
     },
 });
 

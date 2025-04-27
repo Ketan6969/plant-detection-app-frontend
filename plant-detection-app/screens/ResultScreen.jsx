@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar';
 
-export default function ResultsScreen({ route }) {
+export default function ResultsScreen({ route, navigation }) {
     const { analysis } = route.params;
     const [isFavorite, setIsFavorite] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -27,10 +28,9 @@ export default function ResultsScreen({ route }) {
                 return;
             }
 
-            // Prepare the exact PlantDetails structure expected by backend
             const plantDetails = {
                 organ: analysis.organ || '',
-                species: analysis.species?.common_name || analysis.species || '',
+                species: typeof analysis.species === 'object' ? analysis.species.common_name : analysis.species || '',
                 common_names: analysis.common_names || [],
                 scientific_name: analysis.scientific_name || ''
             };
@@ -48,8 +48,6 @@ export default function ResultsScreen({ route }) {
                 const errorData = await response.json();
                 throw new Error(errorData.detail || 'Failed to add to favorites');
             }
-
-            const data = await response.json();
 
             setIsFavorite(true);
             Alert.alert(
@@ -78,113 +76,135 @@ export default function ResultsScreen({ route }) {
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Plant Identification</Text>
-                <Text style={styles.subtitle}>Detailed Analysis Results</Text>
+        <View style={styles.mainContainer}>
+            <ScrollView contentContainerStyle={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Plant Identification</Text>
+                    <Text style={styles.subtitle}>Detailed Analysis Results</Text>
 
-                <TouchableOpacity
-                    style={[styles.favoriteButton, isFavorite && styles.favoritedButton]}
-                    onPress={toggleFavorite}
-                    disabled={isLoading || isFavorite}
-                >
-                    <Ionicons
-                        name={isFavorite ? 'heart' : 'heart-outline'}
-                        size={24}
-                        color={isFavorite ? '#FF3B30' : '#4C956C'}
-                    />
-                    <Text style={[styles.favoriteText, { color: isFavorite ? '#FF3B30' : '#4C956C' }]}>
-                        {isFavorite ? 'Favorited' : 'Add to Favorites'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.card}>
-                {analysis.image_url && (
-                    <View style={styles.imageContainer}>
-                        <Image
-                            source={{ uri: analysis.image_url }}
-                            style={styles.plantImage}
-                            resizeMode="cover"
-                        />
-                    </View>
-                )}
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Basic Information</Text>
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Organ:</Text>
-                        <Text style={styles.value}>{analysis.organ || 'N/A'}</Text>
-                    </View>
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Species:</Text>
-                        <Text style={styles.value}>{analysis.species?.common_name || analysis.species || 'N/A'}</Text>
-                    </View>
-                    {analysis.family && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Family:</Text>
-                            <Text style={styles.value}>{analysis.family}</Text>
-                        </View>
-                    )}
+                    <TouchableOpacity
+                        style={[styles.favoriteButton, isFavorite && styles.favoritedButton]}
+                        onPress={toggleFavorite}
+                        disabled={isLoading || isFavorite}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color="#4C956C" />
+                        ) : (
+                            <>
+                                <Ionicons
+                                    name={isFavorite ? 'heart' : 'heart-outline'}
+                                    size={24}
+                                    color={isFavorite ? '#FF3B30' : '#4C956C'}
+                                />
+                                <Text style={[styles.favoriteText, { color: isFavorite ? '#FF3B30' : '#4C956C' }]}>
+                                    {isFavorite ? 'Favorited' : 'Add to Favorites'}
+                                </Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.divider} />
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Scientific Details</Text>
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Scientific Name:</Text>
-                        <Text style={[styles.value, styles.scientificName]}>{analysis.scientific_name || 'N/A'}</Text>
-                    </View>
-                    {analysis.genus && (
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Genus:</Text>
-                            <Text style={styles.value}>{analysis.genus}</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Common Names</Text>
-                    {analysis.common_names && analysis.common_names.length > 0 ? (
-                        <View style={styles.commonNamesContainer}>
-                            {analysis.common_names.map((name, index) => (
-                                <View key={index} style={styles.commonNameTag}>
-                                    <Text style={styles.commonNameText}>{name}</Text>
-                                </View>
-                            ))}
+                <View style={styles.card}>
+                    {analysis.image_url ? (
+                        <View style={styles.imageContainer}>
+                            <Image
+                                source={{ uri: analysis.image_url }}
+                                style={styles.plantImage}
+                                resizeMode="cover"
+                                onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+                            />
                         </View>
                     ) : (
-                        <Text style={styles.value}>No common names found.</Text>
+                        <View style={[styles.imageContainer, styles.imagePlaceholder]}>
+                            <Ionicons name="leaf-outline" size={60} color="#4C956C" />
+                        </View>
+                    )}
+
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Basic Information</Text>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Organ:</Text>
+                            <Text style={styles.value}>{analysis.organ || 'N/A'}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Species:</Text>
+                            <Text style={styles.value}>
+                                {typeof analysis.species === 'object'
+                                    ? analysis.species.common_name
+                                    : analysis.species || 'N/A'}
+                            </Text>
+                        </View>
+                        {analysis.family && (
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Family:</Text>
+                                <Text style={styles.value}>{analysis.family}</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Scientific Details</Text>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Scientific Name:</Text>
+                            <Text style={[styles.value, styles.scientificName]}>{analysis.scientific_name || 'N/A'}</Text>
+                        </View>
+                        {analysis.genus && (
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Genus:</Text>
+                                <Text style={styles.value}>{analysis.genus}</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Common Names</Text>
+                        {analysis.common_names && analysis.common_names.length > 0 ? (
+                            <View style={styles.commonNamesContainer}>
+                                {analysis.common_names.map((name, index) => (
+                                    <View key={index} style={styles.commonNameTag}>
+                                        <Text style={styles.commonNameText}>{name}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.value}>No common names found.</Text>
+                        )}
+                    </View>
+
+                    {analysis.description && (
+                        <>
+                            <View style={styles.divider} />
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Description</Text>
+                                <Text style={styles.descriptionText}>{analysis.description}</Text>
+                            </View>
+                        </>
                     )}
                 </View>
-
-                {analysis.description && (
-                    <>
-                        <View style={styles.divider} />
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Description</Text>
-                            <Text style={styles.descriptionText}>{analysis.description}</Text>
-                        </View>
-                    </>
-                )}
-            </View>
-        </ScrollView>
+            </ScrollView>
+            <BottomNavBar navigation={navigation} activeRoute="ResultsScreen" />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: '#F9FAF9',
+    },
     container: {
         flexGrow: 1,
-        backgroundColor: '#F9FAF9',
         padding: 20,
-        paddingBottom: 40,
+        paddingBottom: 80, // Added padding to prevent content from being hidden behind nav bar
     },
     header: {
         marginBottom: 25,
         alignItems: 'center',
+        top: 20
     },
     title: {
         fontSize: 28,
@@ -201,16 +221,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F0F7F4',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
         borderRadius: 25,
         marginTop: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
     },
     favoritedButton: {
         backgroundColor: '#FFEBEE',
     },
     favoriteText: {
-        marginLeft: 8,
+        marginLeft: 10,
         fontWeight: '600',
         fontSize: 16,
     },
@@ -224,13 +249,20 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowRadius: 15,
         elevation: 5,
+        marginBottom: 20,
+        bottom: -10
     },
     imageContainer: {
         width: '100%',
-        height: 200,
+        height: 220,
         borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 20,
+    },
+    imagePlaceholder: {
+        backgroundColor: '#E8F4EA',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     plantImage: {
         width: '100%',

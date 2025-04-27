@@ -19,7 +19,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.ketan2004.plantdetectionapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +36,11 @@
           "cameraPermission": "Allow access to your camera to take photos"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2c8c53df-f441-4c99-b4b7-c1f8f8b289b4"
+      }
+    }
   }
 }
-
