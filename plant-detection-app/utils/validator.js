@@ -1,4 +1,6 @@
 // validators.js
+// Correct import (namespace import)
+import * as Notifications from "expo-notifications";
 
 // Name Validator
 export const validateName = (name) => {

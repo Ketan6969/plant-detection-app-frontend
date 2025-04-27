@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+// import { sendPlantCareNotification, scheduleDailyPlantNotifications, sendPlantSpecificNotification } from '../utils/notification';
 
 const BottomNavBar = ({ navigation, activeRoute }) => {
     return (
@@ -48,6 +49,12 @@ const BottomNavBar = ({ navigation, activeRoute }) => {
                 <FontAwesome name="user-o" size={24} color="white" />
                 <Text style={styles.navButtonText}>Profile</Text>
             </TouchableOpacity>
+
+            {/* 
+            <Button
+                title="Test Notification"
+                onPress={scheduleDailyPlantNotifications}
+            /> */}
         </View>
     );
 };

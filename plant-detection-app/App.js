@@ -8,9 +8,15 @@ import ResultsScreen from "./screens/ResultScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import FavoriteScreen from "./screens/FavoriteScreen";
 import RecentsScreen from "./screens/RecentsScreen";
+import { useSetupNotifications } from "./utils/notification";
+import { Navigation } from "lucide-react-native";
 
 const Stack = createNativeStackNavigator();
+
 export default function App() {
+  // Setup notifications (with cleanup)
+  useSetupNotifications(Navigation);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
