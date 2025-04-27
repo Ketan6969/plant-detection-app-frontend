@@ -29,13 +29,13 @@ export default function ResultsScreen({ route, navigation }) {
                 return;
             }
 
-
-
+            // Include the image URL in the plant details
             const plantDetails = {
                 organ: analysis.organ || '',
                 species: typeof analysis.species === 'object' ? analysis.species.common_name : analysis.species || '',
                 common_names: analysis.common_names || [],
-                scientific_name: analysis.scientific_name || ''
+                scientific_name: analysis.scientific_name || '',
+                image_url: savedImagePath || '',  // Send the image URL
             };
 
             const response = await fetch(apiUrl, {
@@ -44,7 +44,7 @@ export default function ResultsScreen({ route, navigation }) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify(plantDetails)
+                body: JSON.stringify(plantDetails),
             });
 
             if (!response.ok) {
@@ -69,6 +69,7 @@ export default function ResultsScreen({ route, navigation }) {
             setIsLoading(false);
         }
     };
+
 
     if (!analysis) {
         return (
