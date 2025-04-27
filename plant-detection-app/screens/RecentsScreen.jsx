@@ -1,9 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const RecentItem = ({ item }) => {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+        setImageError(true);
+    };
+
+    return (
+        <View style={styles.recentItem}>
+            <View style={styles.imagePlaceholder}>
+                <Image
+                    source={imageError ? require('../assets/images/leaf-icon.png') : { uri: item.image_url }}
+                    style={styles.image}
+                    onError={handleImageError}
+                />
+            </View>
+            <View style={styles.recentInfo}>
+                <Text style={styles.recentName}>{item.identified_plant}</Text>
+                <View style={styles.metaContainer}>
+                    <Text style={styles.recentDate}>
+                        {new Date(item.timestamp).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </Text>
+                    <Text style={styles.recentTime}>
+                        {new Date(item.timestamp).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </Text>
+                </View>
+            </View>
+        </View>
+    );
+};
 
 const RecentsScreen = ({ navigation }) => {
     const [recents, setRecents] = useState([]);
@@ -51,31 +89,9 @@ const RecentsScreen = ({ navigation }) => {
         }
     };
 
-    const renderRecentItem = ({ item }) => (
-        <View style={styles.recentItem}>
-            <View style={styles.imagePlaceholder}>
-                <Ionicons name="leaf" size={30} color="#4CAF50" />
-            </View>
-            <View style={styles.recentInfo}>
-                <Text style={styles.recentName}>{item.identified_plant}</Text>
-                <View style={styles.metaContainer}>
-                    <Text style={styles.recentDate}>
-                        {new Date(item.timestamp).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                        })}
-                    </Text>
-                    <Text style={styles.recentTime}>
-                        {new Date(item.timestamp).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                    </Text>
-                </View>
-            </View>
-        </View>
-    );
+    const renderRecentItem = ({ item }) => {
+        return <RecentItem item={item} />;
+    };
 
     const handleRefresh = () => {
         setLoading(true);
@@ -85,7 +101,7 @@ const RecentsScreen = ({ navigation }) => {
 
     return (
         <LinearGradient
-            colors={['#fafafa', '#f0f0f0', '#fafafa']} // Soft cool gray gradient
+            colors={['#e0f7fa', '#ffffff', '#e0f7fa']}
             style={styles.container}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -96,17 +112,14 @@ const RecentsScreen = ({ navigation }) => {
 
                 {error ? (
                     <View style={styles.errorContainer}>
-                        <Ionicons name="warning" size={40} color="#FF5252" />
                         <Text style={styles.errorText}>Failed to load recents</Text>
                     </View>
                 ) : loading ? (
                     <View style={styles.loadingContainer}>
-                        <Ionicons name="leaf" size={40} color="#FFFFFF" />
                         <Text style={styles.loadingText}>Loading your scans...</Text>
                     </View>
                 ) : recents.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="time-outline" size={40} color="rgba(255,255,255,0.6)" />
                         <Text style={styles.emptyText}>No scans recorded yet</Text>
                     </View>
                 ) : (
@@ -138,14 +151,14 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 32,
-        color: 'white',
+        color: '#333',
         fontWeight: '800',
         marginBottom: 8,
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.9)',
+        fontSize: 18,
+        color: 'rgba(0,0,0,0.7)',
         marginBottom: 30,
         textAlign: 'center',
     },
@@ -155,25 +168,36 @@ const styles = StyleSheet.create({
     recentItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(203, 223, 194, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         borderRadius: 15,
         padding: 15,
         marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
     },
     imagePlaceholder: {
         width: 60,
         height: 60,
         borderRadius: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
+    },
+    image: {
+        width: 60,
+        height: 60,
+        borderRadius: 10,
+        resizeMode: 'cover',
     },
     recentInfo: {
         flex: 1,
     },
     recentName: {
-        color: 'white',
+        color: '#333',
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 5,
@@ -182,12 +206,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     recentDate: {
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(0,0,0,0.6)',
         fontSize: 14,
         marginRight: 10,
     },
     recentTime: {
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(0,0,0,0.6)',
         fontSize: 14,
     },
     loadingContainer: {
@@ -196,7 +220,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        color: 'white',
+        color: '#333',
         marginTop: 15,
         fontSize: 16,
     },
@@ -207,7 +231,7 @@ const styles = StyleSheet.create({
         paddingBottom: 100,
     },
     emptyText: {
-        color: 'rgba(255,255,255,0.8)',
+        color: '#333',
         fontSize: 18,
         marginTop: 15,
     },
@@ -217,7 +241,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     errorText: {
-        color: 'white',
+        color: '#333',
         marginTop: 15,
         fontSize: 16,
     },

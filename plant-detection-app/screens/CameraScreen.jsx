@@ -16,6 +16,8 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system'; // NEW
+
 
 export default function CameraScreen({ navigation }) {
     const [facing, setFacing] = useState('back');
@@ -42,6 +44,31 @@ export default function CameraScreen({ navigation }) {
             </View>
         );
     }
+
+    // ******************NEW CHANGES ***********************
+    const saveImagePermanently = async (imageUri) => {
+        try {
+            const folderUri = FileSystem.documentDirectory + 'images/';
+            await FileSystem.makeDirectoryAsync(folderUri, { intermediates: true });
+
+            const fileName = Date.now() + '.jpg'; // Unique name based on timestamp
+            const newPath = folderUri + fileName;
+
+            await FileSystem.copyAsync({
+                from: imageUri,
+                to: newPath,
+            });
+
+            console.log('Image saved at:', newPath);
+            return newPath;
+        } catch (error) {
+            console.error('Failed to save image:', error);
+            return null;
+        }
+    };
+    // *******************************************************
+
+
 
     const toggleCameraFacing = () => {
         setFacing(current => (current === 'back' ? 'front' : 'back'));
@@ -91,64 +118,72 @@ export default function CameraScreen({ navigation }) {
     const sendImageToAPI = async () => {
         setIsUploading(true);
         try {
-            // Get the stored JWT token
             const token = await AsyncStorage.getItem('userToken');
-
             if (!token) {
                 Alert.alert('Authentication required', 'Please login to use this feature');
                 navigation.navigate('Login');
                 return;
             }
 
-            // Create FormData to send the image
+            // Save the image locally first
+            const savedImagePath = await saveImagePermanently(capturedImage);
+            if (!savedImagePath) {
+                throw new Error('Failed to save image locally');
+            }
+
+            // Create FormData
             const formData = new FormData();
             formData.append('file', {
-                uri: capturedImage,
+                uri: capturedImage, // keep uploading the original capturedImage
                 name: 'plant_photo.jpg',
                 type: 'image/jpeg'
             });
 
-            // Add timestamp if needed
-            // formData.append('timestamp', new Date().toISOString());
+            // Send the savedImagePath (image URL) along with other data to the backend
+            formData.append('image_url', savedImagePath); // Add this line
+            console.log(`printing Image URL : ${savedImagePath}`)
 
             const api = process.env.EXPO_PUBLIC_API_URL;
             const response = await fetch(`${api}/plant`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    // 'Content-Type': 'multipart/form-data',
                 },
                 body: formData
             });
 
+            const logFormData = (formData) => {
+                const entries = formData.entries();
+                for (let entry of entries) {
+                    console.log(entry);
+                }
+            };
+
+            logFormData(formData);
             const responseData = await response.json();
 
             if (!response.ok) {
                 throw new Error(responseData.message || 'Failed to upload image');
             }
 
-            // Handle successful response
-            Alert.alert('Success', 'Image uploaded successfully!');
-            navigation.navigate('ResultsScreen', { analysis: responseData });
+            // Pass the savedImagePath along with the responseData to ResultsScreen
+            navigation.navigate('ResultsScreen', {
+                analysis: responseData,
+                savedImagePath: savedImagePath, // PASS THIS
+            });
 
         } catch (error) {
             console.error('Upload error:', error);
-
-            // Handle expired token
             if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                Alert.alert(
-                    'Session Expired',
-                    'Please login again',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: async () => {
-                                await AsyncStorage.removeItem('userToken');
-                                navigation.navigate('Login');
-                            }
+                Alert.alert('Session Expired', 'Please login again', [
+                    {
+                        text: 'OK',
+                        onPress: async () => {
+                            await AsyncStorage.removeItem('userToken');
+                            navigation.navigate('Login');
                         }
-                    ]
-                );
+                    }
+                ]);
             } else {
                 Alert.alert('Error', error.message || 'Failed to upload image');
             }
@@ -156,6 +191,7 @@ export default function CameraScreen({ navigation }) {
             setIsUploading(false);
         }
     };
+
 
     if (capturedImage) {
         return (

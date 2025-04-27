@@ -6,9 +6,10 @@ import BottomNavBar from '../components/BottomNavBar';
 
 export default function ResultsScreen({ route, navigation }) {
     const { analysis } = route.params;
+    const { savedImagePath } = route.params;
+    console.log('savedImagePath:', savedImagePath);
     const [isFavorite, setIsFavorite] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/plant/favorite/add`;
 
@@ -27,6 +28,8 @@ export default function ResultsScreen({ route, navigation }) {
                 );
                 return;
             }
+
+
 
             const plantDetails = {
                 organ: analysis.organ || '',
@@ -105,10 +108,10 @@ export default function ResultsScreen({ route, navigation }) {
                 </View>
 
                 <View style={styles.card}>
-                    {analysis.image_url ? (
+                    {savedImagePath ? (
                         <View style={styles.imageContainer}>
                             <Image
-                                source={{ uri: analysis.image_url }}
+                                source={{ uri: savedImagePath }}
                                 style={styles.plantImage}
                                 resizeMode="cover"
                                 onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
