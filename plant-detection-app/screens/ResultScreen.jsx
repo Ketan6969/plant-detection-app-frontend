@@ -62,7 +62,7 @@ export default function ResultsScreen({ route, navigation }) {
                 [{ text: 'OK' }]
             );
         } catch (error) {
-            console.error('Error adding to favorites:', error);
+            console.log('Error adding to favorites:', error);
             Alert.alert(
                 'Error',
                 error.message || 'Failed to add to favorites. Please try again.',
@@ -99,7 +99,7 @@ export default function ResultsScreen({ route, navigation }) {
             });
 
         } catch (error) {
-            console.error('Sharing failed:', error);
+            console.log('Sharing failed:', error);
             Alert.alert('Error', 'Failed to share plant details. Please try again.');
         } finally {
             setIsSharing(false);

@@ -31,7 +31,7 @@ const ProfileScreen = () => {
                 email: decoded.email || ''
             });
         } catch (error) {
-            console.error('Error decoding token:', error);
+            console.log('Error decoding token:', error);
         }
     };
 
@@ -64,7 +64,7 @@ const ProfileScreen = () => {
 
             setFavorites(formattedData);
         } catch (error) {
-            console.error('Error fetching favorites:', error);
+            console.log('Error fetching favorites:', error);
             setError(error.message);
         } finally {
             setLoading(false);
@@ -90,7 +90,7 @@ const ProfileScreen = () => {
             const data = await response.json();
             setTotalScans(data);
         } catch (error) {
-            console.error('Error fetching identifications:', error);
+            console.log('Error fetching identifications:', error);
             setTotalScans(0);
         }
     };
@@ -142,9 +142,9 @@ const ProfileScreen = () => {
                     <Text style={styles.dateAdded}>{item.date_added}</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.favoriteButton}>
+            {/* <TouchableOpacity style={styles.favoriteButton}>
                 <Ionicons name="heart" size={20} color="#e74c3c" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </View>
     );
 

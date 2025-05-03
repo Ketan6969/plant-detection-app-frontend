@@ -47,7 +47,7 @@ const FavoriteScreen = () => {
                 setError('Failed to fetch favorites');
             }
         } catch (error) {
-            console.error('Error fetching favorites:', error);
+            console.log('Error fetching favorites:', error);
             setError(error.message);
             if (error.message.includes('401')) {
                 navigation.navigate('Login');
@@ -84,7 +84,7 @@ const FavoriteScreen = () => {
                             setFavorites(favorites.filter(item => item.id !== id));
                             Alert.alert('Success', 'Removed from favorites');
                         } catch (error) {
-                            console.error('Error removing favorite:', error);
+                            console.log('Error removing favorite:', error);
                             Alert.alert('Error', 'Failed to remove favorite');
                         }
                     },

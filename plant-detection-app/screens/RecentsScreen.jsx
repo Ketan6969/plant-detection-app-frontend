@@ -83,7 +83,7 @@ const RecentsScreen = ({ navigation }) => {
             const data = await response.json();
             setRecents(data);
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             setError(error.message);
         } finally {
             setLoading(false);

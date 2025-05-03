@@ -134,7 +134,7 @@ const Login = ({ navigation }) => {
 
             navigation.replace('ScanAPlant');
         } catch (error) {
-            console.error('Login error:', error);
+            console.log('Login error:', error);
             setErrors(prev => ({ ...prev, general: error.message }));
         } finally {
             setIsLoading(false);

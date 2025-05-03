@@ -68,7 +68,7 @@ const Signup = ({ navigation }) => {
 
             navigation.navigate('Login');
         } catch (error) {
-            console.error(error);
+            console.log(error);
             setErrors(prev => ({ ...prev, general: 'Network error. Please check your connection.' }));
         } finally {
             setIsLoading(false);

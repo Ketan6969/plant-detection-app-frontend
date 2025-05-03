@@ -31,7 +31,7 @@ export const checkTokenExpiration = async (navigation) => {
 
     return true;
   } catch (error) {
-    // console.error("[Auth] Token validation failed:", error);
+    // console.log("[Auth] Token validation failed:", error);
     await redirectToLogin(navigation, "Invalid session. Please sign in again.");
     return false;
   }

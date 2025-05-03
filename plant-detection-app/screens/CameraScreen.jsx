@@ -62,7 +62,7 @@ export default function CameraScreen({ navigation }) {
             console.log('Image saved at:', newPath);
             return newPath;
         } catch (error) {
-            console.error('Failed to save image:', error);
+            console.log('Failed to save image:', error);
             return null;
         }
     };
@@ -173,7 +173,7 @@ export default function CameraScreen({ navigation }) {
             });
 
         } catch (error) {
-            console.error('Upload error:', error);
+            console.log('Upload error:', error);
             if (error.message.includes('401') || error.message.includes('Unauthorized')) {
                 Alert.alert('Session Expired', 'Please login again', [
                     {
