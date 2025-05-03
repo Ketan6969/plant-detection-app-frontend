@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Eye, EyeOff } from 'lucide-react-native'; // added import
 import { validateEmail, validatePassword } from '../utils/validator';
 
+
 const Login = ({ navigation }) => {
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/users/login`;
@@ -18,15 +19,54 @@ const Login = ({ navigation }) => {
         general: ''
     });
 
+    // useEffect(() => {
+    //     const checkLoginStatus = async () => {
+    //         try {
+    //             const token = await AsyncStorage.getItem('userToken');
+    //             if (token) {
+    //                 navigation.navigate('ScanAPlant');
+    //             }
+    //         } catch (e) {
+    //             console.log('Failed to fetch token', e);
+    //         }
+    //     };
+
+    //     checkLoginStatus();
+    // }, []);
+
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
                 if (token) {
-                    navigation.navigate('ScanAPlant');
+                    // Check if token is expired
+                    const isExpired = isTokenExpired(token);
+                    if (!isExpired) {
+                        navigation.navigate('ScanAPlant');
+                    } else {
+                        // Optional: Remove expired token
+                        await AsyncStorage.removeItem('userToken');
+                    }
                 }
             } catch (e) {
                 console.log('Failed to fetch token', e);
+            }
+        };
+
+        // Helper function to check token expiration
+        const isTokenExpired = (token) => {
+            try {
+                // Decode the token (without verification)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.exp) {
+                    // Compare expiration time with current time
+                    return payload.exp < Date.now() / 1000;
+                }
+                // If no expiration time, assume it's expired
+                return true;
+            } catch (e) {
+                console.log('Failed to decode token', e);
+                return true; // If there's an error, treat as expired
             }
         };
 

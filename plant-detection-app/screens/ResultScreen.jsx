@@ -243,8 +243,6 @@ export default function ResultsScreen({ route, navigation }) {
                     <DetailRow label="Common Name" value={analysis?.common_names?.[0] || 'N/A'} />
                     <DetailRow label="Scientific Name" value={analysis?.scientific_name || 'N/A'} />
                     <DetailRow label="Organ" value={analysis?.organ || 'N/A'} />
-                    <DetailRow label="Family" value={analysis?.family || 'N/A'} />
-                    <DetailRow label="Genus" value={analysis?.genus || 'N/A'} />
                     <DetailRow
                         label="Species"
                         value={typeof analysis?.species === 'object'

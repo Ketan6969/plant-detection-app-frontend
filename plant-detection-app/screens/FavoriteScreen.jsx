@@ -109,7 +109,7 @@ const FavoriteScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Favorite Screens</Text>
+            <Text style={styles.title}>My Garden</Text>
             <Text style={styles.subtitle}>Your Favorites</Text>
             {loading ? (
                 <View style={styles.loadingContainer}>
@@ -188,13 +188,14 @@ const styles = StyleSheet.create({
         fontSize: 32,
         color: '#333',
         fontWeight: '800',
-        marginBottom: 8,
+        marginBottom: 0,
+        marginTop: 30,
         textAlign: 'center',
     },
     subtitle: {
         fontSize: 18,
         color: 'rgba(0,0,0,0.7)',
-        marginBottom: 30,
+        marginBottom: 10,
         textAlign: 'center',
     },
     loadingContainer: {

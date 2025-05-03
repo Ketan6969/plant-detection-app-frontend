@@ -1,74 +1,182 @@
-import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Image } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ImageBackground,
+    TouchableOpacity,
+    Image,
+    Animated,
+    StatusBar,
+    Platform,
+    SafeAreaView,
+    Dimensions
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
+import { checkTokenExpiration } from '../utils/auth';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+
+const { width, height } = Dimensions.get('window');
 
 const ScanAPlant = ({ navigation }) => {
+    const [isScanning, setIsScanning] = useState(false);
+    const scanAnim = useRef(new Animated.Value(0)).current;
+    const buttonScale = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        // Check authentication on component mount
+        const verifyAuth = async () => {
+            const isTokenValid = await checkTokenExpiration();
+            if (!isTokenValid) {
+                navigation.navigate("Login");
+            }
+        };
+        verifyAuth();
+
+        // Set status bar to light mode for better visibility on dark background
+        StatusBar.setBarStyle('light-content');
+
+        return () => {
+            // Reset scan animation when component unmounts
+            scanAnim.stopAnimation();
+        };
+    }, [navigation]);
+
+    useEffect(() => {
+        if (isScanning) {
+            startScanAnimation();
+        } else {
+            scanAnim.stopAnimation();
+        }
+    }, [isScanning]);
+
+    // Initialize scanning animation on component mount
+    useEffect(() => {
+        setIsScanning(true);
+    }, []);
+
+    const startScanAnimation = () => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(scanAnim, {
+                    toValue: 1,
+                    duration: 2000,
+                    useNativeDriver: true
+                }),
+                Animated.timing(scanAnim, {
+                    toValue: 0,
+                    duration: 2000,
+                    useNativeDriver: true
+                })
+            ])
+        ).start();
+    };
+
+    const animateButton = () => {
+        // Haptic feedback for button press
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        // Button press animation
+        Animated.sequence([
+            Animated.timing(buttonScale, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true
+            }),
+            Animated.timing(buttonScale, {
+                toValue: 1,
+                duration: 100,
+                useNativeDriver: true
+            })
+        ]).start();
+
+        // Navigate to camera screen
+        navigation.navigate('CameraScreen');
+    };
+
+    const translateY = scanAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 200] // Increased range for more noticeable effect
+    });
+
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="light-content" />
             <ImageBackground
-                source={require('../assets/images/plant.jpg')}
+                source={require('../assets/images/plantpin.jpeg')}
                 style={styles.background}
-                blurRadius={5}
+                blurRadius={6}
             >
-                {/* Semi-transparent overlay */}
-                <View style={styles.overlay} />
+                <LinearGradient
+                    colors={['rgba(0,0,0,0.4)', 'rgba(20, 61, 41, 0.7)']}
+                    style={styles.overlay}
+                />
 
-                {/* Main Content */}
                 <View style={styles.contentContainer}>
-                    {/* Scan Prompt */}
-                    <Text style={styles.title}>Discover Plants</Text>
-                    <Text style={styles.subtitle}>Identify any plant with your camera</Text>
-
-                    {/* Scan Target */}
-                    <View style={styles.scanTarget}>
-                        <View style={styles.circleOuter}>
-                            <View style={styles.circleInner}>
-                                <Image
-                                    source={require('../assets/images/plant2.jpg')}
-                                    style={styles.plantImage}
-                                    resizeMode="cover"
-                                />
-                            </View>
-                        </View>
-                        <Text style={styles.scanHint}>Center the plant in the circle</Text>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Plant Scanner</Text>
+                        <Text style={styles.subtitle}>Identify plants instantly with AI</Text>
                     </View>
 
-                    {/* Scan Button */}
-                    <TouchableOpacity
-                        style={styles.scanButton}
-                        onPress={() => navigation.navigate('CameraScreen')}
-                    >
-                        <Ionicons name="scan" size={24} color="white" />
-                        <Text style={styles.scanButtonText}>Scan Now</Text>
-                    </TouchableOpacity>
+                    <View style={styles.scanContainer}>
+                        <View style={styles.plantImageContainer}>
+                            <Image
+                                source={require('../assets/images/plantbg.png')}
+                                style={styles.plantImage}
+                                resizeMode="contain"
+                            />
+                            <Animated.View
+                                style={[
+                                    styles.scanLine,
+                                    {
+                                        transform: [{ translateY }],
+                                        opacity: scanAnim
+                                    }
+                                ]}
+                            />
+                        </View>
+
+                        <View style={styles.instructionsContainer}>
+                            <Text style={styles.instructionTitle}>How to scan:</Text>
+                            <View style={styles.instructionItem}>
+                                <Ionicons name="camera-outline" size={22} color="#4CAF50" />
+                                <Text style={styles.instructionText}>Point camera at a leaf or flower</Text>
+                            </View>
+                            <View style={styles.instructionItem}>
+                                <Ionicons name="sunny-outline" size={22} color="#4CAF50" />
+                                <Text style={styles.instructionText}>Ensure good lighting conditions</Text>
+                            </View>
+                            <View style={styles.instructionItem}>
+                                <Ionicons name="hand-left-outline" size={22} color="#4CAF50" />
+                                <Text style={styles.instructionText}>Hold steady for 2-3 seconds</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                        <TouchableOpacity
+                            style={styles.scanButton}
+                            onPress={animateButton}
+                            activeOpacity={0.8}
+                        >
+                            <LinearGradient
+                                colors={['#6BDA7A', '#4CAF50', '#3d8b40']}
+                                style={styles.buttonGradient}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                            >
+                                <Ionicons name="scan-outline" size={22} color="white" />
+                                <Text style={styles.scanButtonText}>Scan a Plant Now</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </View>
 
-                {/* Bottom Navigation */}
-                {/* <View style={styles.bottomNav}>
-                    <TouchableOpacity
-                        style={[styles.navButton, styles.activeNavButton]}
-                        onPress={() => navigation.navigate('CameraScreen')}
-                    >
-                        <Ionicons name="camera" size={26} color="#4CAF50" />
-                        <Text style={styles.navButtonText}>Scan</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.navButton} onPress={() => navigation.navigate('FavoriteScreen')} >
-                        <Ionicons name="star-outline" size={26} color="white" />
-                        <Text style={styles.navButtonText}  >Favorites</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.navButton}
-                        onPress={() => navigation.navigate('ProfileScreen')}
-                    >
-                        <FontAwesome name="user-o" size={24} color="white" />
-                        <Text style={styles.navButtonText}>Profile</Text>
-                    </TouchableOpacity>
-                </View> */}
                 <BottomNavBar navigation={navigation} activeRoute="ScanAPlant" />
-
-
             </ImageBackground>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -79,110 +187,127 @@ const styles = StyleSheet.create({
     },
     background: {
         flex: 1,
-        justifyContent: 'space-between',
+        resizeMode: 'cover',
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)',
     },
     contentContainer: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 30,
-        marginTop: 50,
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'ios' ? 10 : 50,
+        paddingBottom: 30,
     },
-    title: {
-        fontSize: 32,
-        color: 'white',
-        fontWeight: '800',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.8)',
-        marginBottom: 40,
-        textAlign: 'center',
-    },
-    scanTarget: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    circleOuter: {
-        width: 240,
-        height: 240,
-        borderRadius: 120,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.3)',
-        justifyContent: 'center',
+    header: {
         alignItems: 'center',
         marginBottom: 20,
     },
-    circleInner: {
-        width: 220,
-        height: 220,
-        borderRadius: 110,
-        borderWidth: 3,
-        borderColor: '#FFF',
+    title: {
+        fontSize: 36,
+        color: 'white',
+        fontWeight: '700',
+        marginBottom: 8,
+        letterSpacing: 0.5,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 5,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.9)',
+        textAlign: 'center',
+    },
+    scanContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    plantImageContainer: {
+        width: width * 0.85,
+        height: 230,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 25,
+        position: 'relative',
+        borderRadius: 20,
         overflow: 'hidden',
-        shadowColor: '#4CAF50',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.6,
-        shadowRadius: 15,
-        elevation: 10,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
     plantImage: {
-        width: '100%',
+        width: '80%',
         height: '100%',
+        borderRadius: 12,
+        marginBottom: 20
     },
-    scanHint: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.7)',
-        fontStyle: 'italic',
-    },
-    scanButton: {
-        flexDirection: 'row',
-        backgroundColor: '#4CAF50',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 30,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+    scanLine: {
+        position: 'absolute',
+        width: '85%',
+        height: 3,
+        backgroundColor: '#5BDA7A',
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
         elevation: 5,
     },
-    scanButtonText: {
+    instructionsContainer: {
+        width: '100%',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    instructionTitle: {
         color: 'white',
         fontSize: 18,
         fontWeight: '600',
-        marginLeft: 10,
+        marginBottom: 15,
+        textAlign: 'center',
     },
-    bottomNav: {
+    instructionItem: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: 'rgba(30, 30, 30, 0.9)',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingVertical: 15,
+        alignItems: 'center',
+        marginBottom: 15,
         paddingHorizontal: 10,
     },
-    navButton: {
+    instructionText: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 15,
+        marginLeft: 12,
+        flex: 1,
+    },
+    scanButton: {
+        borderRadius: 25,
+        overflow: 'hidden',
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 8,
+        marginBottom: Platform.OS === 'ios' ? 20 : -10,
+        alignSelf: 'center',
+        width: width * 0.65,
+    },
+    buttonGradient: {
+        flexDirection: 'row',
+        paddingVertical: 16,
+        paddingHorizontal: 25,
         alignItems: 'center',
-        padding: 8,
-        borderRadius: 20,
-        width: '30%',
+        justifyContent: 'center',
+        borderRadius: 25,
     },
-    activeNavButton: {
-        backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    },
-    navButtonText: {
+    scanButtonText: {
         color: 'white',
-        fontSize: 12,
-        marginTop: 5,
-    },
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 10,
+    }
 });
 
 export default ScanAPlant;

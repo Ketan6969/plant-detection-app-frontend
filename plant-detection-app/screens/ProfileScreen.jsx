@@ -11,9 +11,11 @@ const ProfileScreen = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [userData, setUserData] = useState({ name: '', email: '' });
+    const [totalScans, setTotalScans] = useState(0);
     const navigation = useNavigation();
     const api = process.env.EXPO_PUBLIC_API_URL;
     const apiUrl = `${api}/plant/favorite/get_all`;
+    const apiUrlGetAll = `${api}/users/get_all_identifications`;
 
     const fetchUserData = async () => {
         try {
@@ -69,6 +71,30 @@ const ProfileScreen = () => {
         }
     };
 
+    const fetchIdentifications = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) {
+                navigation.navigate('Login');
+                return;
+            }
+
+            const response = await fetch(apiUrlGetAll, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setTotalScans(data);
+        } catch (error) {
+            console.error('Error fetching identifications:', error);
+            setTotalScans(0);
+        }
+    };
+
     const handleLogout = async () => {
         Alert.alert(
             'Logout',
@@ -92,9 +118,17 @@ const ProfileScreen = () => {
         );
     };
 
+    const handleSeeAllFavorites = () => {
+        navigation.navigate('FavoriteScreen', {
+            favorites: favorites,
+            refreshFavorites: fetchFavorites
+        });
+    };
+
     useEffect(() => {
         fetchUserData();
         fetchFavorites();
+        fetchIdentifications();
     }, []);
 
     const renderItem = ({ item }) => (
@@ -125,7 +159,7 @@ const ProfileScreen = () => {
         }
         return (
             <Image
-                source={require('../assets/images/plant5.jpg')} // Placeholder default image
+                source={require('../assets/images/plant5.jpg')}
                 style={styles.profileImage}
             />
         );
@@ -153,23 +187,19 @@ const ProfileScreen = () => {
             {/* Stats Section */}
             <View style={styles.statsContainer}>
                 <View style={styles.statItem}>
-                    <Text style={styles.statValue}>42</Text>
+                    <Text style={styles.statValue}>{totalScans}</Text>
                     <Text style={styles.statLabel}>Scans</Text>
                 </View>
                 <View style={styles.statItem}>
                     <Text style={styles.statValue}>{favorites.length}</Text>
                     <Text style={styles.statLabel}>Favorites</Text>
                 </View>
-                <View style={styles.statItem}>
-                    <Text style={styles.statValue}>15</Text>
-                    <Text style={styles.statLabel}>Identified</Text>
-                </View>
             </View>
 
             {/* Favorites Section */}
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Favorite Plants</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleSeeAllFavorites}>
                     <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
             </View>
@@ -186,7 +216,10 @@ const ProfileScreen = () => {
                     <Ionicons name="leaf-outline" size={60} color="#bdc3c7" />
                     <Text style={styles.emptyText}>No favorites yet</Text>
                     <Text style={styles.emptySubtext}>Your favorite plants will appear here</Text>
-                    <TouchableOpacity style={styles.scanButton}>
+                    <TouchableOpacity
+                        style={styles.scanButton}
+                        onPress={() => navigation.navigate('CameraScreen')}
+                    >
                         <Text style={styles.scanButtonText}>Scan Your First Plant</Text>
                     </TouchableOpacity>
                 </View>
@@ -239,6 +272,11 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: 'bold',
         color: 'white',
+    },
+    profileImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
     },
     userInfo: {
         flex: 1,
