@@ -13,7 +13,7 @@ const BottomNavBar = ({ navigation, activeRoute }) => {
                 ]}
                 onPress={() => navigation.navigate('ScanAPlant')}
             >
-                <Ionicons name="camera" size={26} color="#4CAF50" />
+                <Ionicons name="home-outline" size={26} color="#4CAF50" />
                 <Text style={styles.navButtonText}>Scan</Text>
             </TouchableOpacity>
 
